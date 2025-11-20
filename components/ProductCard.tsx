@@ -13,8 +13,8 @@ interface ProductCardProps {
   battery: string
   color: string
   imei: string
-  priceARS: number
-  priceUSD: number
+  priceARS: string
+  priceUSD: string
   image: string
   video: string
 }

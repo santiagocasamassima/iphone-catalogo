@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ProductCard } from "@/components/ProductCard"
 
-type Product = {
+export type Product = {
   name: string
   capacity: string
   battery: string
@@ -19,9 +19,11 @@ type Product = {
   location?: string
   cost?: string
   roi?: string
+  // 👇 la dejamos opcional para matar el error de TypeScript
+  price?: string
 }
 
-const MODELOS = ["iPhone 13", "iPhone 14", "iPhone 15", "iPhone 16"]
+const MODELOS = ["IPHONE 11", "IPHONE 12", "IPHONE 13", "IPHONE 14", "IPHONE 15", "IPHONE 16"]
 
 export function CatalogClient({ products }: { products: Product[] }) {
   const [selectedModel, setSelectedModel] = useState<string | null>(null)
@@ -86,20 +88,21 @@ export function CatalogClient({ products }: { products: Product[] }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {filteredProducts.map((p, i) => (
             <ProductCard
-                key={p.imei || i}
-                name={p.name}
-                capacity={p.capacity}
-                battery={p.battery}
-                color={p.color}
-                imei={p.imei}
-                priceUSD={p.priceUSD}
-                priceARS={p.priceARS}
-                image={p.image}
-                video={p.video}
-                />
+              key={p.imei || i}
+              name={p.name}
+              capacity={p.capacity}
+              battery={p.battery}
+              color={p.color}
+              imei={p.imei}
+              priceUSD={p.priceUSD}
+              priceARS={p.priceARS}
+              image={p.image}
+              video={p.video}
+            />
           ))}
         </div>
       )}
     </div>
   )
 }
+
