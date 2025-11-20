@@ -1,60 +1,51 @@
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card"
+import { fetchSheet } from "@/lib/fetchSheet"
+import { CatalogClient } from "@/components/CatalogClient"
 
-export default async function MinoristaPage({ params }: { params: Promise<{ empresa: string }> }) {
+export default async function MinoristaPage({
+  params,
+}: {
+  params: Promise<{ empresa: string }>
+}) {
   const { empresa } = await params
+
+  // 👇 PONÉ ACÁ TU ID REAL DEL SHEET
+  const SHEET_ID = "1KiPkhmQLGfhLAmrknRFVEsdTyXcCfKO0NRY9IEvJwVg"
+
+  const rawProducts = await fetchSheet(SHEET_ID)
+
+  console.log("DEBUG RAW PRODUCT 0:", rawProducts[0])
+
+  // Normalizamos tipos (price y stock como números)
+  const products = rawProducts.map((p: any) => ({
+    name: p.modelo || "",
+    capacity: p.capacidad?.replace(/\s+/g, "") || "",
+    battery: p.bateria || "",
+    color: p.color || "",
+    imei: p.imei || "",
+    provider: p.proveedor || "",
+    location: p.ubicacion || "",
+    video: p.video_referencia || "",
+    image: "/placeholder.png",
+
+    priceUSD: p.venta_usd || "",
+    priceARS: p.venta_ars || "",
+    
+    roi: p.rentabilidad || "",
+}))
 
   return (
     <main className="p-6 max-w-5xl mx-auto space-y-6">
-      
-      {/* Título */}
+      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Catálogo Minorista</h1>
         <p className="text-gray-600">Empresa: {empresa}</p>
       </div>
 
-      {/* Buscador */}
-      <Input placeholder="Buscar producto..." className="max-w-sm" />
-
-      {/* Chips (badges) */}
-      <div className="flex gap-3">
-        <Badge variant="outline">iPhone 13</Badge>
-        <Badge variant="outline">iPhone 14</Badge>
-        <Badge variant="outline">iPhone 15</Badge>
-        <Badge variant="outline">iPhone 16</Badge>
-      </div>
-
-      {/* Cards vacías */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Producto demo</CardTitle>
-            <CardDescription>Descripción del producto</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>$000.000</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Producto demo 2</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>$000.000</p>
-          </CardContent>
-        </Card>
-
-      </div>
+      {/* Catálogo con filtros dinámicos */}
+      <CatalogClient products={products} />
     </main>
   )
 }
+
+
 
