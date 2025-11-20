@@ -8,10 +8,17 @@ import { ProductCard } from "@/components/ProductCard"
 type Product = {
   name: string
   capacity: string
+  battery: string
   color: string
+  imei: string
+  priceUSD: string
+  priceARS: string
   image: string
-  condition?: string
-  stock?: number
+  video: string
+  provider?: string
+  location?: string
+  cost?: string
+  roi?: string
 }
 
 const MODELOS = ["iPhone 13", "iPhone 14", "iPhone 15", "iPhone 16"]
