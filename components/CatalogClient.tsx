@@ -9,7 +9,6 @@ type Product = {
   name: string
   capacity: string
   color: string
-  price: number
   image: string
   condition?: string
   stock?: number
