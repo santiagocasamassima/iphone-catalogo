@@ -39,7 +39,7 @@ export default async function MinoristaPage() {
 
       {/* CATÁLOGO PREMIUM */}
       <section className="px-6 md:px-12 py-12 max-w-7xl mx-auto">
-        <CatalogClient products={products} />
+        <CatalogClient products={products as any} />
       </section>
 
       {/* FOOTER ELEGANTE */}
