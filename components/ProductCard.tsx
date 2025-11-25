@@ -10,6 +10,7 @@ type Props = {
   priceARS: string
   image: string
   video: string
+  price?: string
 }
 
 export function ProductCard({
