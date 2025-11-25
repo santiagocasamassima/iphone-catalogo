@@ -20,6 +20,7 @@ export default async function MinoristaPage() {
     priceARS: p.venta_ars || "",
     cost: p.costo || "",
     roi: p.rentabilidad || "",
+    price: p.venta_usd || "",
   }))
 
   return (
