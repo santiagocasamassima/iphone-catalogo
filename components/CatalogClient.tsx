@@ -1,400 +1,278 @@
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { ProductCard } from "@/components/ProductCard"
-import type { Props } from "@/components/ProductCard"
+import { ProductCard, Props as ProductProps } from "@/components/ProductCard"
 
-// -----------------------------------------------------
-// DETECTAR GENERACIÓN
-// -----------------------------------------------------
-const getGeneration = (name: string) => {
-  const n = name.toLowerCase()
-  if (n.includes("iphone 17")) return 17
-  if (n.includes("iphone 16")) return 16
-  if (n.includes("iphone 15")) return 15
-  if (n.includes("iphone 14")) return 14
-  if (n.includes("iphone 13")) return 13
-  if (n.includes("iphone 12")) return 12
-  if (n.includes("iphone 11")) return 11
-  return 0
-}
-
-// -----------------------------------------------------
-// CATEGORÍAS
-// -----------------------------------------------------
-const CATEGORIES = [
-  { id: "iphone", label: "iPhone" },
-  { id: "ipad", label: "iPad" },
-  { id: "airpods", label: "AirPods" },
-  { id: "ps5", label: "PS5" },
-  { id: "no-battery", label: "Otros" },
+const CATEGORY_ORDER = [
+  "all",
+  "iphone-new",
+  "iphone-premium",
+  "iphone-outlet",
+  "iphone",
+  "ipad",
+  "airpods",
+  "ps5",
+  "macbook",
 ]
 
-// -----------------------------------------------------
-// MODELOS IPHONE
-// -----------------------------------------------------
-const MODELOS_IPHONE = [
-  "IPHONE 11",
-  "IPHONE 12",
-  "IPHONE 13",
-  "IPHONE 14",
-  "IPHONE 15",
-  "IPHONE 16",
-  "IPHONE 17",
-]
-
-// -----------------------------------------------------
-// SUBMODELOS IPHONE
-// -----------------------------------------------------
-const SUBMODELOS_MAP: Record<string, string[]> = {
-  "IPHONE 11": ["11", "11 pro", "11 pro max"],
-  "IPHONE 12": ["12", "12 mini", "12 pro", "12 pro max"],
-  "IPHONE 13": ["13", "13 mini", "13 pro", "13 pro max"],
-  "IPHONE 14": ["14", "14 plus", "14 pro", "14 pro max"],
-  "IPHONE 15": ["15", "15 plus", "15 pro", "15 pro max"],
-  "IPHONE 16": ["16", "16 plus", "16 pro", "16 pro max"],
-  "IPHONE 17": ["17", "17 pro", "17 pro max"],
+const CATEGORY_LABELS: Record<string, string> = {
+  all: "Todos",
+  iphone: "iPhone (Todos)",
+  "iphone-new": "iPhone Nuevos",
+  "iphone-premium": "Usados Premium",
+  "iphone-outlet": "iPhone Outlet",
+  ipad: "iPad",
+  airpods: "AirPods",
+  ps5: "PS5",
+  macbook: "MacBook",
 }
 
-// -----------------------------------------------------
-// MATCH EXACTO
-// -----------------------------------------------------
-function matchesExactModel(name: string, selected: string) {
-  const n = name.toLowerCase()
-  const s = selected.toLowerCase()
+const MODELOS = ["11", "12", "13", "14", "15", "16", "17"]
+const SUBMODELOS = ["pro max", "pro", "plus", "mini", "se"]
+const ITEMS_PER_PAGE = 20
 
-  if (s.includes("pro max")) return n.includes("pro max")
-  if (s.includes("pro")) return n.includes("pro") && !n.includes("pro max")
-  if (s.includes("mini")) return n.includes("mini")
-  if (s.includes("plus")) return n.includes("plus")
-
-  const base = s.replace("iphone", "").trim()
-  return (
-    n.includes(base) &&
-    !n.includes("pro") &&
-    !n.includes("mini") &&
-    !n.includes("max") &&
-    !n.includes("plus")
-  )
+function normalizeName(v: string) {
+  return v.toLowerCase().replace(/\s+/g, " ").trim()
 }
 
-// -----------------------------------------------------
-// COMPONENTE PRINCIPAL
-// -----------------------------------------------------
-export function CatalogClient({ products }: { products: Props[] }) {
-  const [selectedCategory, setSelectedCategory] = useState("iphone")
-  const [selectedModel, setSelectedModel] = useState<string | null>(null)
-  const [selectedSubModel, setSelectedSubModel] = useState<string | null>(null)
-
+export function CatalogClient({ products }: { products: ProductProps[] }) {
+  const [category, setCategory] = useState("all")
   const [search, setSearch] = useState("")
 
-  const [filters, setFilters] = useState({
-    capacity: "",
-    color: "",
-    minPrice: "",
-    maxPrice: "",
-  })
+  const [selectedModel, setSelectedModel] = useState<string | null>(null)
+  const [selectedSub, setSelectedSub] = useState<string | null>(null)
 
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "none">("none")
-  const [sortGen, setSortGen] = useState<"new" | "old" | "none">("none")
+  const [capacityFilter, setCapacityFilter] = useState("")
+  const [colorFilter, setColorFilter] = useState("")
 
-  // PANEL APPLE “FILTROS ▾”
-  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [minPrice, setMinPrice] = useState("")
+  const [maxPrice, setMaxPrice] = useState("")
 
-  // AUTO-HIDE
-  const [hideBar, setHideBar] = useState(false)
-  const [lastScroll, setLastScroll] = useState(0)
+  const [sortOrder, setSortOrder] = useState("none")
+  const [sortGen, setSortGen] = useState("none")
 
+  const [page, setPage] = useState(1)
+
+  const resetFilters = () => {
+    setSelectedModel(null)
+    setSelectedSub(null)
+    setCapacityFilter("")
+    setColorFilter("")
+    setMinPrice("")
+    setMaxPrice("")
+    setSortOrder("none")
+    setSortGen("none")
+    setSearch("")
+    setPage(1)
+  }
+
+  // 🔥🔥 FIX PRINCIPAL: LIMPIAR filtros al montar
   useEffect(() => {
-    const handle = () => {
-      const y = window.scrollY
-      if (y > lastScroll && y > 100) setHideBar(true)
-      else setHideBar(false)
-      setLastScroll(y)
-    }
-    window.addEventListener("scroll", handle)
-    return () => window.removeEventListener("scroll", handle)
-  }, [lastScroll])
+    resetFilters()
+  }, [])
 
-  // -----------------------------------------------------
-  // FILTRADO PRINCIPAL
-  // -----------------------------------------------------
+  // FILTRO POR CATEGORÍA
+  const base = useMemo(() => {
+    return products.filter((p) => {
+      if (category === "all") return true
+      if (category === "iphone") return p.category === "iphone"
+      if (category === "iphone-new") return p.iphoneCondition === "iphone-new"
+      if (category === "iphone-premium") return p.iphoneCondition === "iphone-premium"
+      if (category === "iphone-outlet") return p.iphoneCondition === "iphone-outlet"
+      return p.category === category
+    })
+  }, [products, category])
+
+  // FILTROS SECUNDARIOS
   const filtered = useMemo(() => {
-    let r = products.filter((p) => {
-      const name = p.name.toLowerCase()
-      const matchCat = p.category === selectedCategory
-      const matchSearch = name.includes(search.toLowerCase())
+    return base.filter((p) => {
+      const name = normalizeName(p.name)
 
-      if (!matchCat || !matchSearch) return false
+      if (search && !name.includes(search.toLowerCase())) return false
+      if (selectedModel && !name.includes("iphone " + selectedModel)) return false
+      if (selectedSub && !name.includes(selectedSub.toLowerCase())) return false
 
-      if (selectedCategory === "iphone" && selectedModel) {
-        if (!name.includes(selectedModel.toLowerCase())) return false
-      }
+      if (capacityFilter && p.capacity !== capacityFilter) return false
 
-      if (selectedSubModel && !matchesExactModel(name, selectedSubModel))
+      if (colorFilter && p.color.toLowerCase() !== colorFilter.toLowerCase())
         return false
 
       const price = Number(p.priceUSD || 0)
-      if (filters.minPrice && price < Number(filters.minPrice)) return false
-      if (filters.maxPrice && price > Number(filters.maxPrice)) return false
-
-      if (filters.capacity && !p.capacity.toLowerCase().includes(filters.capacity.toLowerCase()))
-        return false
-
-      if (filters.color && !p.color.toLowerCase().includes(filters.color.toLowerCase()))
-        return false
+      if (minPrice && price < Number(minPrice)) return false
+      if (maxPrice && price > Number(maxPrice)) return false
 
       return true
     })
+  }, [
+    base,
+    search,
+    selectedModel,
+    selectedSub,
+    capacityFilter,
+    colorFilter,
+    minPrice,
+    maxPrice,
+  ])
+
+  // ORDENAMIENTOS
+  const ordered = useMemo(() => {
+    let r = [...filtered]
 
     if (sortOrder !== "none") {
-      r = [...r].sort((a, b) =>
+      r.sort((a, b) =>
         sortOrder === "asc"
           ? Number(a.priceUSD) - Number(b.priceUSD)
           : Number(b.priceUSD) - Number(a.priceUSD)
       )
     }
 
-    if (selectedCategory === "iphone" && sortGen !== "none") {
-      r = [...r].sort((a, b) =>
-        sortGen === "new"
-          ? getGeneration(b.name) - getGeneration(a.name)
-          : getGeneration(a.name) - getGeneration(b.name)
+    const getGen = (name: string) => {
+      const m = normalizeName(name).match(/iphone (\d+)/)
+      return m ? Number(m[1]) : 0
+    }
+
+    if (sortGen !== "none") {
+      r.sort((a, b) =>
+        sortGen === "new" ? getGen(b.name) - getGen(a.name) : getGen(a.name) - getGen(b.name)
       )
     }
 
     return r
-  }, [
-    products,
-    selectedCategory,
-    selectedModel,
-    selectedSubModel,
-    search,
-    filters,
-    sortOrder,
-    sortGen,
-  ])
+  }, [filtered, sortOrder, sortGen])
 
-  // -----------------------------------------------------
-  // AGRUPADO IPHONE
-  // -----------------------------------------------------
-  const grouped = MODELOS_IPHONE.reduce<Record<string, Props[]>>((acc, model) => {
-    if (selectedCategory !== "iphone") return acc
-    acc[model] = filtered.filter((p) =>
-      p.name.toLowerCase().includes(model.toLowerCase())
-    )
-    return acc
-  }, {})
+  // PAGINADO
+  const totalPages = Math.ceil(ordered.length / ITEMS_PER_PAGE) || 1
+  const paginated = ordered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
 
-  // -----------------------------------------------------
-  // RENDER
-  // -----------------------------------------------------
   return (
-    <div key={selectedCategory} className="space-y-16">
+    <div className="space-y-10">
 
-      {/* HERO APPLE */}
-      <section className="text-center pt-10 pb-6">
-        <h1 className="text-5xl font-semibold tracking-tight">
-          <span className="bg-gradient-to-r from-black to-gray-500 bg-clip-text text-transparent">
-            Rosario iPhone
-          </span>
-        </h1>
-        <p className="text-gray-500 text-lg mt-3">
-          Tecnología premium, al mejor precio.
-        </p>
-      </section>
-
-      {/* STICKY APPLE MINIMAL */}
-      <div
-        className={`
-          sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b
-          transition-all duration-300
-          ${hideBar ? "-translate-y-full opacity-0" : "translate-y-0 opacity-100"}
-          py-4 flex flex-col items-center gap-4
-        `}
-      >
-
-        {/* SEARCH */}
-        <div className="relative w-full max-w-md">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">🔍</span>
-          <Input
-            placeholder="Buscar producto"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 rounded-full bg-gray-100 focus:bg-white transition shadow-sm"
-          />
-        </div>
-
-        {/* CATEGORÍAS APPLE */}
-        <div className="flex gap-2 flex-wrap justify-center">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => {
-                setSelectedCategory(c.id)
-                setSelectedModel(null)
-                setSelectedSubModel(null)
-              }}
-              className={`
-                px-4 py-2 rounded-full text-sm transition
-                ${
-                  selectedCategory === c.id
-                    ? "bg-black text-white shadow"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }
-              `}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-
-        {/* BOTÓN APPLE “Filtros ▾” */}
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="text-sm text-gray-600 underline"
-        >
-          {showAdvanced ? "Ocultar filtros" : "Filtros ▾"}
-        </button>
-
+      {/* CATEGORÍAS */}
+      <div className="flex gap-2 flex-wrap justify-center">
+        {CATEGORY_ORDER.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => {
+              setCategory(cat)
+              resetFilters()
+            }}
+            className={`
+              px-4 py-2 rounded-full border text-sm font-medium
+              ${category === cat ? "bg-black text-white" : "bg-gray-100 text-gray-700"}
+            `}
+          >
+            {CATEGORY_LABELS[cat]}
+          </button>
+        ))}
       </div>
 
-      {/* PANEL DE FILTROS APPLE */}
-      {showAdvanced && (
-        <div className="mx-auto max-w-4xl bg-gray-50 p-6 rounded-3xl shadow-sm border">
-          
-          {/* MODELOS IPHONE */}
-          {selectedCategory === "iphone" && (
-            <>
-              <h3 className="text-lg font-semibold text-gray-700 mb-3">Modelos</h3>
-              <div className="flex gap-2 flex-wrap mb-6">
-                {MODELOS_IPHONE.map((m) => (
-                  <Badge
-                    key={m}
-                    variant={selectedModel === m ? "default" : "outline"}
-                    className="cursor-pointer px-3 py-1.5 rounded-full"
-                    onClick={() => {
-                      setSelectedModel(selectedModel === m ? null : m)
-                      setSelectedSubModel(null)
-                    }}
-                  >
-                    {m}
-                  </Badge>
-                ))}
-              </div>
+      {/* FILTROS */}
+      <div className="sticky top-0 z-20 bg-white py-3 shadow-sm flex flex-wrap gap-2 justify-center">
 
-              {/* SUBMODELOS */}
-              {selectedModel && (
-                <>
-                  <h3 className="text-lg font-semibold text-gray-700 mb-3">Submodelos</h3>
-                  <div className="flex gap-2 flex-wrap mb-6">
-                    {SUBMODELOS_MAP[selectedModel]?.map((sub) => (
-                      <Badge
-                        key={sub}
-                        variant={selectedSubModel === sub ? "default" : "outline"}
-                        className="cursor-pointer px-3 py-1.5 rounded-full"
-                        onClick={() =>
-                          setSelectedSubModel(selectedSubModel === sub ? null : sub)
-                        }
-                      >
-                        {sub.toUpperCase()}
-                      </Badge>
-                    ))}
-                  </div>
-                </>
-              )}
-            </>
-          )}
+        <Input
+          placeholder="Buscar…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-40 text-sm"
+        />
 
-          {/* ▼ FILTROS AVANZADOS */}
-          <h3 className="text-lg font-semibold text-gray-700 mb-3">Filtros avanzados</h3>
-          <div className="flex flex-wrap gap-4">
+        {MODELOS.map((m) => (
+          <button
+            key={m}
+            onClick={() => setSelectedModel(selectedModel === m ? null : m)}
+            className={`
+              px-3 py-1 text-xs rounded-full border
+              ${selectedModel === m ? "bg-black text-white" : "bg-white"}
+            `}
+          >
+            {m}
+          </button>
+        ))}
 
-            <select
-              value={filters.capacity}
-              onChange={(e) => setFilters((f) => ({ ...f, capacity: e.target.value }))}
-              className="border p-3 rounded-xl bg-white shadow-sm"
-            >
-              <option value="">Capacidad</option>
-              <option value="64">64GB</option>
-              <option value="128">128GB</option>
-              <option value="256">256GB</option>
-              <option value="512">512GB</option>
-              <option value="1tb">1TB</option>
-            </select>
+        {SUBMODELOS.map((s) => (
+          <button
+            key={s}
+            onClick={() => setSelectedSub(selectedSub === s ? null : s)}
+            className={`
+              px-3 py-1 text-xs rounded-full border
+              ${selectedSub === s ? "bg-black text-white" : "bg-white"}
+            `}
+          >
+            {s.toUpperCase()}
+          </button>
+        ))}
 
-            <select
-              value={filters.color}
-              onChange={(e) => setFilters((f) => ({ ...f, color: e.target.value }))}
-              className="border p-3 rounded-xl bg-white shadow-sm"
-            >
-              <option value="">Color</option>
-              <option value="black">Negro</option>
-              <option value="white">Blanco</option>
-              <option value="silver">Silver</option>
-              <option value="blue">Azul</option>
-              <option value="gold">Dorado</option>
-              <option value="red">Rojo</option>
-              <option value="pink">Rosa</option>
-            </select>
+        <select
+          className="px-2 py-1 border rounded-full text-xs"
+          value={colorFilter}
+          onChange={(e) => setColorFilter(e.target.value)}
+        >
+          <option value="">Color</option>
+          <option value="NEGRO">Negro</option>
+          <option value="BLANCO">Blanco</option>
+          <option value="AZUL">Azul</option>
+          <option value="DORADO">Dorado</option>
+          <option value="ROJO">Rojo</option>
+          <option value="ROSA">Rosa</option>
+          <option value="CELESTE">Celeste</option>
+          <option value="VERDE">Verde</option>
+          <option value="LILA">Lila</option>
+        </select>
 
-            <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as any)}
-              className="border p-3 rounded-xl bg-white shadow-sm"
-            >
-              <option value="none">Precio</option>
-              <option value="asc">Menor a mayor</option>
-              <option value="desc">Mayor a menor</option>
-            </select>
+        <select
+          className="px-2 py-1 border rounded-full text-xs"
+          value={capacityFilter}
+          onChange={(e) => setCapacityFilter(e.target.value)}
+        >
+          <option value="">Capacidad</option>
+          <option value="64">64GB</option>
+          <option value="128">128GB</option>
+          <option value="256">256GB</option>
+          <option value="512">512GB</option>
+          <option value="1TB">1TB</option>
+        </select>
+      </div>
 
-            {selectedCategory === "iphone" && (
-              <select
-                value={sortGen}
-                onChange={(e) => setSortGen(e.target.value as any)}
-                className="border p-3 rounded-xl bg-white shadow-sm"
-              >
-                <option value="none">Generación</option>
-                <option value="new">Más nuevo</option>
-                <option value="old">Más viejo</option>
-              </select>
-            )}
+      {/* PRODUCTOS */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {paginated.map((p, idx) => (
+          <ProductCard key={p.imei + "-" + idx} {...p} />
+        ))}
+      </div>
 
-          </div>
-        </div>
-      )}
+      {/* PAGINADO */}
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-4 py-4">
+          <button
+            disabled={page === 1}
+            onClick={() => setPage(page - 1)}
+            className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-40"
+          >
+            ←
+          </button>
 
-      {/* RESULTADOS iPHONE AGRUPADOS */}
-      {selectedCategory === "iphone" &&
-        MODELOS_IPHONE.map((m) => {
-          const items = grouped[m]
-          if (!items?.length) return null
+          <span className="text-gray-700">
+            Página {page} de {totalPages}
+          </span>
 
-          return (
-            <section key={m} className="space-y-6 px-4">
-              <h2 className="text-3xl font-bold text-gray-800 tracking-tight border-b pb-2">
-                {m}
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
-                {items.map((p, i) => (
-                  <ProductCard key={p.imei || i} {...p} />
-                ))}
-              </div>
-            </section>
-          )
-        })}
-
-      {/* OTRAS CATEGORÍAS */}
-      {selectedCategory !== "iphone" && (
-        <div className="px-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10 max-w-6xl mx-auto">
-          {filtered.map((p, i) => (
-            <ProductCard key={p.imei || i} {...p} />
-          ))}
+          <button
+            disabled={page === totalPages}
+            onClick={() => setPage(page + 1)}
+            className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-40"
+          >
+            →
+          </button>
         </div>
       )}
     </div>
   )
 }
+
+
+
+
+
+
+
 

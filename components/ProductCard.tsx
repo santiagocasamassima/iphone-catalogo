@@ -1,7 +1,62 @@
 "use client"
 
+// -----------------------------------------------------------
+// IMAGEN GENÉRICA (para todos los modelos)
+// -----------------------------------------------------------
+
+ function getModelImage(category: string, name: string) {
+  const n = name.toLowerCase()
+
+  // iPhone (ya lo tenés andando)
+  if (category === "iphone") {
+    return "/devices/iphone.png"
+  }
+
+  // iPad
+  if (category === "ipad" || n.includes("ipad")) {
+    return "/devices/ipad.png"
+  }
+
+  // AirPods
+  if (category === "airpods" || n.includes("airpods") || n.includes("air pods")) {
+    return "/devices/airpods.png"
+  }
+
+  // MacBook
+  if (category === "macbook" || n.includes("macbook") || n.includes("mac book")) {
+    return "/devices/macbook.png"
+  }
+
+  // PS5
+  if (category === "ps5" || n.includes("ps5") || n.includes("playstation")) {
+    return "/devices/ps5.png"
+  }
+
+  // fallback genérico
+  return "/devices/iphone.png"
+}
+
+
+// -----------------------------------------------------------
+// COLOR PILL
+// -----------------------------------------------------------
+function colorToHex(color: string) {
+  const c = color.toLowerCase()
+
+  if (c.includes("negro") || c.includes("black")) return "#222"
+  if (c.includes("azul") || c.includes("blue") || c.includes("celeste")) return "#3b82f6"
+  if (c.includes("verde") || c.includes("green")) return "#22c55e"
+  if (c.includes("rojo") || c.includes("red")) return "#ef4444"
+  if (c.includes("dorado") || c.includes("gold")) return "#eab308"
+  if (c.includes("gris") || c.includes("silver")) return "#9ca3af"
+  if (c.includes("lila") || c.includes("purple")) return "#a855f7"
+  if (c.includes("rosa") || c.includes("pink")) return "#ec4899"
+  if (c.includes("blanco") || c.includes("white")) return "#f5f5f7"
+
+  return "#aaa"
+}
+
 export type Props = {
-  category: string   // 👈 AGREGAR ESTO
   name: string
   capacity: string
   battery: number | null
@@ -9,79 +64,10 @@ export type Props = {
   imei: string
   priceUSD: string
   priceARS: string
-  image: string
-  video: string
-  provider?: string
-  location?: string
-  roi?: string
-  cost?: string
-}
-
-// ⭐ Formato precios estilo Apple
-function formatPrice(num: string | number) {
-  if (!num) return "-"
-  const n = Number(num)
-  return n.toLocaleString("es-AR", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  })
-}
-
-// ⭐ Detectar BADGE Apple del modelo
-function getModelBadge(name: string): string | null {
-  const n = name.toLowerCase()
-
-  if (n.includes("pro max")) return "Pro Max"
-  if (n.includes("pro")) return "Pro"
-  if (n.includes("plus")) return "Plus"
-  if (n.includes("mini")) return "mini"
-  if (n.includes("se")) return "SE"
-
-  return null
-}
-
-// ⭐ Mapa de colores Apple REAL
-const appleColorMap: Record<string, string> = {
-  // iPhone color palette
-  black: "bg-black",
-  midnight: "bg-[#0A0A0A]",
-  graphite: "bg-[#5E5E5E]",
-  spaceblack: "bg-[#1C1C1E]",
-  white: "bg-[#F5F5F7]",
-  starlight: "bg-[#EDE6D9]",
-  silver: "bg-[#D9D9D9]",
-  blue: "bg-[#0A84FF]",
-  deepblue: "bg-[#001A66]",
-  pink: "bg-[#FFD1DC]",
-  red: "bg-[#BF0A30]",
-  green: "bg-[#34C759]",
-  yellow: "bg-[#FFE55C]",
-  purple: "bg-[#B490FF]",
-  gold: "bg-[#F6E2B3]",
-  natural: "bg-[#C9C1B0]",
-  titanium: "bg-[#8A8680]",
-}
-
-// Normalizar nombre de color a clave del map
-function normalizeAppleColor(raw: string) {
-  if (!raw) return "gray"
-
-  const c = raw.toLowerCase().replace(/\s/g, "")
-
-  if (appleColorMap[c]) return c
-
-  // mappings inteligentes
-  if (c.includes("titan")) return "titanium"
-  if (c.includes("silver")) return "silver"
-  if (c.includes("white") || c.includes("blanco")) return "white"
-  if (c.includes("black") || c.includes("negro") || c.includes("midnight"))
-    return "black"
-  if (c.includes("blue") || c.includes("azul")) return "blue"
-  if (c.includes("pink") || c.includes("rosa")) return "pink"
-  if (c.includes("gold") || c.includes("dorado")) return "gold"
-  if (c.includes("red") || c.includes("rojo")) return "red"
-
-  return "gray"
+  video?: string
+  iphoneCondition?: string
+  falla?: string
+  category?: string   // 🔥 AGREGADO
 }
 
 export function ProductCard(props: Props) {
@@ -94,98 +80,133 @@ export function ProductCard(props: Props) {
     priceUSD,
     priceARS,
     video,
+    iphoneCondition,
+    falla,
   } = props
 
-  // Badge Apple (Pro, Pro Max, Plus, Mini, SE)
-  const badge = getModelBadge(name)
+  const img = getModelImage(props.category || "", name)
+  const cap = capacity.toUpperCase().includes("GB") ? capacity : capacity + "GB"
 
-  // Color Apple real
-  const normalized = normalizeAppleColor(color)
-  const dot = appleColorMap[normalized] || "bg-gray-400"
+  // -----------------------------------------------------------
+  // VIDEO — SOLO SI PARECE UN LINK REAL
+  // -----------------------------------------------------------
+  let cleanVideo: string | null = null
+
+  if (video && video.trim().length > 0) {
+    let v = video.trim().replace(/\u00A0/g, " ")
+
+    // si NO parece URL, no mostramos nada (ej: "VER VIDEO")
+    const looksLikeUrl =
+      v.toLowerCase().includes("http") ||
+      v.toLowerCase().includes("drive.google.com") ||
+      v.toLowerCase().includes("youtu")
+
+    if (looksLikeUrl) {
+      v = v.replace(/\s+/g, "") // sacamos espacios internos en caso de que haya
+
+      if (!/^https?:\/\//i.test(v)) {
+        v = "https://" + v
+      }
+
+      cleanVideo = v
+    }
+  }
 
   return (
     <div
       className="
-        bg-white border border-gray-200 rounded-3xl 
-        shadow-sm hover:shadow-xl 
-        transition-all duration-300 
-        p-6 
-        flex flex-col items-center text-center
+        border border-gray-200 rounded-2xl p-4 shadow-sm bg-white
+        hover:shadow-lg transition-all
+        flex flex-col gap-3
       "
     >
-
-      {/* NOMBRE */}
-      <h3 className="text-2xl font-semibold text-gray-900 tracking-tight">
-        {name}
-      </h3>
-
-      {/* BADGE (Pro, Pro Max, Plus, Mini, SE) */}
-      {badge && (
+      {/* BADGE */}
+      {iphoneCondition && (
         <span
-          className="
-            mt-2 px-3 py-1 
-            text-xs font-medium 
-            bg-black text-white 
-            rounded-full
-            shadow-sm
-          "
+          className={`
+            self-start px-2 py-1 text-xs rounded-lg font-medium text-white
+            ${
+              iphoneCondition === "iphone-new"
+                ? "bg-green-600"
+                : iphoneCondition === "iphone-outlet"
+                ? "bg-orange-600"
+                : "bg-blue-600"
+            }
+          `}
         >
-          {badge}
+          {iphoneCondition === "iphone-new"
+            ? "Nuevo"
+            : iphoneCondition === "iphone-outlet"
+            ? "Outlet"
+            : "Usado Premium"}
         </span>
       )}
 
-      {/* CAPACIDAD + COLOR */}
-      <p className="mt-4 text-gray-700 text-lg flex items-center justify-center gap-2">
-        {capacity?.toUpperCase()}
+      {/* IMAGEN */}
+      <div className="w-full h-44 rounded-xl flex items-center justify-center overflow-hidden bg-white">
+        <img
+          src={img}
+          alt={name}
+          className="max-h-full object-contain"
+        />
+      </div>
 
-        <span className={`h-3 w-3 rounded-full border ${dot}`} />
+      {/* NOMBRE */}
+      <h3 className="text-lg font-bold text-gray-900">{name}</h3>
 
-        <span className="capitalize">{color}</span>
-      </p>
+      {/* COLOR + PILL */}
+      <div className="flex items-center gap-2">
+        <div
+          className="w-3 h-3 rounded-full border border-gray-300"
+          style={{ backgroundColor: colorToHex(color) }}
+        />
+        <p className="text-sm text-gray-600 capitalize">{color}</p>
+      </div>
+
+      {/* CAPACIDAD */}
+      <p className="text-sm text-gray-600">{cap}</p>
 
       {/* BATERÍA */}
       {battery !== null && (
-        <p className="text-gray-500 text-sm mt-1">
-          🔋 {battery}%
-        </p>
+        <p className="text-sm text-gray-600">🔋 {battery}%</p>
       )}
 
       {/* IMEI */}
-      <p className="text-gray-400 text-xs mt-2">
-        IMEI: {imei}
-      </p>
+      <p className="text-xs text-gray-500">IMEI: {imei}</p>
 
-      {/* Divider */}
-      <div className="w-full border-t mt-4 mb-4" />
-
-      {/* PRECIO USD */}
-      <div className="text-2xl font-semibold text-gray-900">
-        ${formatPrice(priceUSD)}{" "}
-        <span className="text-gray-500 text-sm">USD</span>
-      </div>
-
-      {/* PRECIO ARS */}
-      {priceARS && (
-        <div className="text-gray-700 text-sm mt-1">
-          {formatPrice(priceARS)}{" "}
-          <span className="text-gray-400 text-xs">pesos</span>
+      {/* DETALLE OUTLET */}
+      {iphoneCondition === "iphone-outlet" && falla && (
+        <div className="mt-2 bg-orange-50 border border-orange-300 text-orange-800 p-3 rounded-lg text-sm">
+          <span className="font-semibold">Detalle del Outlet:</span>
+          <br />
+          {falla}
         </div>
       )}
 
-      {/* VIDEO */}
-      {video && (
+      {/* PRECIOS */}
+      <div className="mt-2">
+        <p className="text-lg font-bold text-gray-900">
+          ${Number(priceUSD || 0).toLocaleString("es-AR")} dólares
+        </p>
+        <p className="text-lg font-bold text-gray-700">
+          ${Number(priceARS || 0).toLocaleString("es-AR")} pesos
+        </p>
+      </div>
+
+      {/* VER VIDEO */}
+      {cleanVideo && (
         <a
-          href={video}
+          className="text-sm text-blue-600 underline mt-2"
+          href={cleanVideo}
           target="_blank"
-          className="mt-5 text-blue-600 hover:underline text-sm font-medium"
+          rel="noopener noreferrer"
         >
-          🎥 Ver video del equipo
+          Ver video
         </a>
       )}
     </div>
   )
 }
-
 
 
 

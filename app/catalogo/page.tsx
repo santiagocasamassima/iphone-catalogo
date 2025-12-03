@@ -2,139 +2,138 @@ import { fetchSheet } from "@/lib/fetchSheet"
 import { CatalogClient } from "@/components/CatalogClient"
 
 // -------------------------------------------------------------
-// NORMALIZADORES (VERSION CORREGIDA)
+// HELPERS
 // -------------------------------------------------------------
+function normalizePrice(v: any) {
+  if (!v) return ""
+  let s = String(v).replace(/[^\d.,]/g, "")
 
-function normalizePrice(value: string) {
-  if (!value) return ""
-
-  let cleaned = value.toString().trim().replace(/[^\d.,-]/g, "")
-
-  if (cleaned.includes(".") && cleaned.includes(",")) {
-    cleaned = cleaned.replace(/\./g, "")
-    cleaned = cleaned.replace(",", ".")
-    return cleaned
+  if (s.includes(".") && s.includes(",")) {
+    s = s.replace(/\./g, "")
+    s = s.replace(",", ".")
+    return s
   }
 
-  if (cleaned.includes(",")) {
-    cleaned = cleaned.replace(/\./g, "")
-    cleaned = cleaned.replace(",", ".")
-    return cleaned
-  }
+  if (s.includes(",")) return s.replace(",", ".")
 
-  return cleaned
+  return s
 }
 
-function normalizeColor(raw: string) {
-  const c = raw?.toLowerCase() || ""
-
-  if (c.includes("silver") || c.includes("plata") || c.includes("plateado"))
-    return "silver"
-  if (c.includes("black") || c.includes("negro") || c.includes("midnight"))
-    return "black"
-  if (c.includes("white") || c.includes("blanco") || c.includes("starlight"))
-    return "white"
-  if (c.includes("blue") || c.includes("azul"))
-    return "blue"
-  if (c.includes("titanium"))
-    return "titanium"
-  if (c.includes("pink") || c.includes("rosa"))
-    return "pink"
-  if (c.includes("red") || c.includes("rojo"))
-    return "red"
-  if (c.includes("gold") || c.includes("dorado"))
-    return "gold"
-
-  return c
+function normalizeColor(raw: any) {
+  if (!raw) return ""
+  return String(raw).trim().toUpperCase()
 }
 
-function normalizeBattery(b: string) {
-  if (!b) return null
-  const match = b.match(/\d+/)
-  return match ? Number(match[0]) : null
+function normalizeBattery(raw: any) {
+  if (!raw) return null
+  const m = String(raw).match(/\d+/)
+  return m ? Number(m[0]) : null
 }
 
-function detectCategory(name: string, battery: any, estado: string) {
-  const n = name.toLowerCase()
+function detectCategory(name: string) {
+  const n = name?.toUpperCase() || ""
+  if (n.includes("IPHONE")) return "iphone"
+  if (n.includes("IPAD")) return "ipad"
+  if (n.includes("AIRPODS")) return "airpods"
+  if (n.includes("MACBOOK")) return "macbook"
+  if (n.includes("PS5") || n.includes("MANDO")) return "ps5"
+  return "other"
+}
 
-  if (n.includes("ipad")) return "ipad"
-  if (n.includes("airpod")) return "airpods"
-  if (n.includes("ps5") || n.includes("playstation") || n.includes("dualsense"))
-    return "ps5"
+function detectIphoneCondition({ estado, falla, imei, name }: any) {
+  const est = String(estado || "").toUpperCase()
+  const fall = String(falla || "").trim()
+  const ime = String(imei || "").trim()
+  const nam = String(name || "").toUpperCase()
 
-  if (estado?.toLowerCase().includes("nuevo") || estado?.toLowerCase().includes("sellado"))
-    return "iphone-new"
+  if (!nam.includes("IPHONE")) return null
+  if (est.startsWith("NUEVO")) return "iphone-new"
+  if (est.startsWith("OUTLET")) return "iphone-outlet"
+  if (fall) return "iphone-outlet"
+  if (!ime || ime.length < 5) return "iphone-outlet"
 
-  if (!battery) return "no-battery"
-
-  return "iphone"
+  return "iphone-premium"
 }
 
 // -------------------------------------------------------------
-// NORMALIZACIÓN FINAL
+// NORMALIZADOR
 // -------------------------------------------------------------
-function normalizeData(p: any) {
-  let batteryNum = normalizeBattery(p.bateria)
-
-  if (p.estado?.toLowerCase().includes("sellado") || p.estado?.toLowerCase().includes("nuevo")) {
-    batteryNum = 100
-  }
-
+function normalizeRow(r: any) {
   return {
-    ...p,
-    color: normalizeColor(p.color),
-    battery: batteryNum,
-    category: detectCategory(p.name, batteryNum, p.estado),
+    name: r["modelo"] || "",
+    capacity: r["capacidad"] || "",
+    estado: r["estado"] || "",
+    falla: r["falla"] || "",
+    imei: r["imei"] || "",
+    color: normalizeColor(r["color"] || ""),
+    battery: normalizeBattery(r["bateria"] || ""),
 
-    priceUSD: normalizePrice(p.priceUSD),
-    priceARS: normalizePrice(p.priceARS),
+    video:
+      r["video_referencia"]?.toString().trim().toUpperCase() === "VER VIDEO"
+        ? "https://www.youtube.com/watch?v=QH2-TGUlwu4"
+        : r["video_referencia"] || "",
+
+    priceUSD: normalizePrice(r["venta_usd"] || ""),
+    priceARS: normalizePrice(r["venta_ars"] || ""),
+
+    category: detectCategory(r["modelo"] || ""),
+    iphoneCondition: detectIphoneCondition({
+      estado: r["estado"],
+      falla: r["falla"],
+      imei: r["imei"],
+      name: r["modelo"],
+    }),
   }
 }
 
 // -------------------------------------------------------------
-// PAGE COMPONENT
+// PAGE
 // -------------------------------------------------------------
 export default async function MinoristaPage() {
   const SHEET_ID = "1KiPkhmQLGfhLAmrknRFVEsdTyXcCfKO0NRY9IEvJwVg"
   const GID = "0"
 
-  const rawProducts = await fetchSheet(SHEET_ID, GID)
+  const raw = await fetchSheet(SHEET_ID, GID)
 
-  const products = rawProducts.map((p: any) =>
-    normalizeData({
-      name: p.modelo || "",
-      capacity: p.capacidad || "",
-      bateria: p.bateria || "",
-      estado: p.estado || "",
-      color: p.color || "",
-      imei: p.imei || "",
-      provider: p.proveedor || "",
-      location: p.ubicacion || "",
-      video: p.video_referencia || "",
-      image: "/placeholder.png",
+  // 🔥🔥 USAMOS RAW DIRECTO — tus productos empiezan en raw[0] = fila 6 real
+  const rows = raw
 
-      priceUSD: p.venta_usd || "",
-      priceARS: p.venta_ars || "",
-
-      cost: p.costo || "",
-      roi: p.rentabilidad || "",
-    })
-  )
+  const products = rows
+    .map((r: any) => normalizeRow(r))
+    .filter((p: any) => p.name.length > 0)
 
   return (
     <main className="min-h-screen bg-white text-black">
 
-      {/* CATÁLOGO (hero ahora está dentro del CatalogClient) */}
-      <section className="px-6 md:px-12 py-12 max-w-7xl mx-auto">
+      {/* HERO */}
+      <section className="w-full py-8 text-center bg-white border-b">
+        <h1
+          className="
+            text-4xl md:text-6xl font-semibold tracking-tight
+            bg-gradient-to-r from-sky-600 via-indigo-600 to-purple-600
+            bg-clip-text text-transparent
+          "
+        >
+          RosarioIphone
+        </h1>
+
+        <p className="mt-1 text-sm md:text-base text-gray-600">
+          Catálogo actualizado • Nuevos • Usados Premium • Outlet
+        </p>
+      </section>
+
+      {/* CATALOGO */}
+      <section id="catalogo" className="px-4 md:px-10 py-10 max-w-7xl mx-auto">
         <CatalogClient products={products as any} />
       </section>
 
-      <footer className="py-8 text-center text-gray-500 text-sm border-t mt-20">
-        © {new Date().getFullYear()} Rosario iPhone
+      <footer className="py-10 text-center text-gray-500 text-sm border-t mt-10">
+        © {new Date().getFullYear()} RosarioIphone
       </footer>
     </main>
   )
 }
+
 
 
 
