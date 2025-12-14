@@ -104,14 +104,42 @@ export const IMAGE_MAP: Record<string, string> = {
     "iphone 16 pro max_negro": "/devices/iphone 16 pro max negro.png",
   
     // iPhone 17 (nuevo que generaste)
+    "iphone 17_lavender": "/devices/iphone 17 lavender.png",
+    "iphone 17_sage verde": "/devices/iphone 17 sage verde.png",
+    "iphone 17_white": "/devices/iphone 17 white.png",
+    "iphone 17_black": "/devices/iphone 17 black.png",
     "iphone 17_mist blue": "/devices/iphone 17 mist blue.png",
-    "iphone 17 pro max_orange": "/devices/iphone 17 pro max orange.png",
+    "iphone 17 pro max_cosmic orange": "/devices/iphone 17 pro max orange.png",
     "iphone 17 pro max_silver": "/devices/iphone 17 pro max silver.png",
     "iphone 17 air_sky blue": "/devices/iphone 17 air sky blue.png",
     "iphone 17 air_space black": "/devices/iphone 17 air space black.png",
     "iphone 17 air_light gold": "/devices/iphone 17 air light gold.png",
-    "iphone 17 pro_orange": "/devices/iphone 17 pro max orange.png",
+    "iphone 17 pro_cosmic orange": "/devices/iphone 17 pro max orange.png",
     "iphone 17 pro_deep blue": "/devices/iphone 17 pro deep blue.png",
+    "iphone 17 pro max_deep blue": "/devices/iphone 17 pro deep blue.png",
     "iphone 17 pro_silver": "/devices/iphone 17 pro max silver.png",
+
+    // iPad
+    "ipad air 11 m3 wifi_space gray": "/devices/ipad air 11 m3 space gray.png",
+    "ipad air 11 m3 wifi_purple": "/devices/ipad air 11 m3 purple.png",
+    "ipad mini gen 6 wifi_starlight": "/devices/ipad mini gen 6 starlight.png",
+    "ipad pro 11 m4 wifi_space black": "/devices/ipad pro 11 m4 wifi space black.png",
+    "ipad gen 11 a16 wifi_blue": "/devices/ipad gen 11 a16 wifi blue.png",
+
+    // AirPods
+    "airpods 4_blanco": "/devices/airpods blanco.png",
+
+    // PS5
+    "ps5 digital_blanca": "/devices/ps5 digital blanca.png",
+    "mando ps5_blanco": "/devices/ps5 mando blanco.png",
+    "mando ps5_rojo": "/devices/ps5 mando rojo.png",
+
+    // macbook air
+    "macbook air 13 m3 8gb_silver": "/devices/macbook air 13 m3 8gb silver.png",
+    "macbook air 13 m3 8gb_starlight": "/devices/macbook air 13 m3 8gb starlight.png",
+    "macbook air 13 m3 8gb_space gray": "/devices/macbook air 13 m3 8gb space gray.png",
+    "macbook air 13 m4 16gb_silver": "/devices/macbook air 13 m4 16gb silver.png",
+    "macbook air 13 m4 16gb_sky blue": "/devices/macbook air 13 m4 16gb sky blue.png",
+    "macbook air 13 m4 16gb_midnight": "/devices/macbook air 13 m4 16gb midnight.png",
   }
   

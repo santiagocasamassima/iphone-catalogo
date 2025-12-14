@@ -29,7 +29,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 const MODELOS = ["11", "12", "13", "14", "15", "16", "17"]
-const SUBMODELOS = ["pro max", "pro", "plus", "mini", "se"]
+const SUBMODELOS = ["pro max", "pro", "air", "plus", "mini", "se"]
 const ITEMS_PER_PAGE = 20
 
 function normalizeName(v: string) {

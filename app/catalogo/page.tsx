@@ -47,7 +47,7 @@ function detectIphoneCondition({ estado, falla, imei, name }: any) {
   const nam = String(name || "").toUpperCase()
 
   if (!nam.includes("IPHONE")) return null
-  if (est.startsWith("NUEVO")) return "iphone-new"
+  if (est.includes("NUEVO") && est.includes("SELLADO")) return "iphone-new"
   if (est.startsWith("OUTLET")) return "iphone-outlet"
   if (fall) return "iphone-outlet"
   if (!ime || ime.length < 5) return "iphone-outlet"
@@ -65,6 +65,7 @@ function normalizeRow(r: any) {
     estado: r["estado"] || "",
     falla: r["falla"] || "",
     imei: r["imei"] || "",
+    ubicacion: r["ubicacion"] || "",
     color: normalizeColor(r["color"] || ""),
     battery: normalizeBattery(r["bateria"] || ""),
 
@@ -91,16 +92,19 @@ function normalizeRow(r: any) {
 // -------------------------------------------------------------
 export default async function MinoristaPage() {
   const SHEET_ID = "1KiPkhmQLGfhLAmrknRFVEsdTyXcCfKO0NRY9IEvJwVg"
-  const GID = "0"
+  const GID = "264297055"
 
   const raw = await fetchSheet(SHEET_ID, GID)
 
-  // 🔥🔥 USAMOS RAW DIRECTO — tus productos empiezan en raw[0] = fila 6 real
   const rows = raw
 
   const products = rows
     .map((r: any) => normalizeRow(r))
     .filter((p: any) => p.name.length > 0)
+    .filter((p: any) => {
+      const u = String(p.ubicacion || "").toUpperCase().trim()
+      return u !== "TECNICO"
+    })
 
   return (
     <main className="min-h-screen bg-white text-black">
@@ -133,8 +137,3 @@ export default async function MinoristaPage() {
     </main>
   )
 }
-
-
-
-
-
